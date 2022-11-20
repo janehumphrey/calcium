@@ -8,9 +8,9 @@ clear variables;
 clc;
 
 % USER INPUT.
-inputDir = '/Users/janey/Dropbox/JANEY/PhD/Calcium_code/Calcium/Data';  % Folder containing a single .tif file.
+inputDir = '';  % Folder containing a single .tif file.
 bgFile = '';  % Background file (optional).
-resultsDir = '/Users/janey/Dropbox/JANEY/PhD/Calcium_code/Calcium/Results';  % Results folder.
+resultsDir = '';  % Results folder.
 Info.cellDiam = 10;  % Cell diameter, in um.
 Info.pixelSize = 16/20;  % Pixel size, in um.
 Info.interval = 1;  % Time between frames, in s.
@@ -133,9 +133,7 @@ for iCell = selectedCells'
     cutoff = round(size(sortedTrace,1)/4);
     refSmooth = sortedTrace(1:cutoff);
     baselineEst = mean(refSmooth);
-    normTraces(:,iCell) = smoothTrace/baselineEst;
-    gradTraces(:,iCell) = gradient(normTraces(:,iCell));
-    tempGrad = gradTraces(:,iCell);
+    normTraces(:,iCell) = smoothTrace/baselineEst;gradTraces(:,iCell) = gradient(normTraces(:,iCell));tempGrad = gradTraces(:,iCell);
     [peakHeight,peakLoc,~,peakProm] = findpeaks(tempGrad,'minPeakHeight',Info.minGrad);
     spikeStart = peakLoc(peakProm>0.75*peakHeight);
     spikeStart(spikeStart<firstFrame(iCell)+20/Info.interval) = [];
