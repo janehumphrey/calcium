@@ -133,7 +133,9 @@ for iCell = selectedCells'
     cutoff = round(size(sortedTrace,1)/4);
     refSmooth = sortedTrace(1:cutoff);
     baselineEst = mean(refSmooth);
-    normTraces(:,iCell) = smoothTrace/baselineEst;gradTraces(:,iCell) = gradient(normTraces(:,iCell));tempGrad = gradTraces(:,iCell);
+    normTraces(:,iCell) = smoothTrace/baselineEst;
+    gradTraces(:,iCell) = gradient(normTraces(:,iCell));
+    tempGrad = gradTraces(:,iCell);
     [peakHeight,peakLoc,~,peakProm] = findpeaks(tempGrad,'minPeakHeight',Info.minGrad);
     spikeStart = peakLoc(peakProm>0.75*peakHeight);
     spikeStart(spikeStart<firstFrame(iCell)+20/Info.interval) = [];
