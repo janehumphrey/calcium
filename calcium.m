@@ -121,7 +121,7 @@ for iCell = selectedCells'
         goodHeight = roiY>0&roiY<=height;
         roiBox = fovSmooth(roiY(goodHeight),roiX(goodWidth),iFrame);
         roiDisk = roiBox.*se.Neighborhood(goodHeight,goodWidth);
-        intTrace(iFrame) = nanmean(roiDisk(:));
+        intTrace(iFrame) = mean(roiDisk(:),'omitnan');
     end
     
     smoothTrace = smoothdata(intTrace,'gaussian',Info.smoothing*5/Info.interval);
@@ -166,7 +166,7 @@ for iCell = selectedCells'
         goodSpikes = goodHeight&goodWidth&~overlapping;
     end
     heightComingIn = max(normTraces(firstFrame(iCell):(firstFrame(iCell)+round(25/Info.interval)),iCell));
-    if any(goodSpikes)==1
+    if any(goodSpikes)
         spikeLoc{iCell} = spikeStart(goodSpikes);
         Spikes.time{iCell} = (spikeStart(goodSpikes)-firstFrame(iCell))*Info.interval;
         Spikes.lag{iCell} = (spikeStart(goodSpikes)-landingFrame(iCell))*Info.interval;
@@ -176,7 +176,7 @@ for iCell = selectedCells'
         Spikes.height{iCell} = spikeHeight(goodSpikes);
         Spikes.width{iCell} = spikeWidth(goodSpikes);
         areas{iCell} = spikeInt(:,goodSpikes);
-        Spikes.area{iCell} = nansum(areas{iCell}-1,1)';
+        Spikes.area{iCell} = sum(areas{iCell}-1,1,'omitnan')';
         
         Results.caRelease(iCell) = 1;
         Results.hot(iCell) = 0;
@@ -341,8 +341,8 @@ if ~isempty(selectedCells)
     prepareFigure(0.75);
     subplot(2,1,1);
     normMax = max(normTraces(:));
-    if normMax>nanmean(normTraces(:))*10
-        normMax = nanmean(normTraces(:))*10;
+    if normMax>mean(normTraces(:),'omitnan')*10
+        normMax = mean(normTraces(:),'omitnan')*10;
     end
     topAx = prepareAxes('plot','time (s)','normalised intensity',[0,time(end)],[0,normMax]);
     subplot(2,1,2);
@@ -405,27 +405,25 @@ end
 
 [landingX,landingY] = plotMovement(time,nFrames,nCells,cumDist,speed,landingFrame,resultsDir,movDir,cellList,Info.maxSpeed,Results);
 
-excel = actxserver('Excel.Application');
-
 intBase = repmat('Cell ',nCells,1);
 intMat = [intBase,num2str(cellNos)];
 intTitles = cellstr(intMat)';
 intValues = num2cell(normTraces);
 intText = [{'Time (s)'},intTitles;num2cell(time),intValues];
 intFile = [resultsDir,filesep,'Traces.xlsx'];
-createSpreadsheet(excel,intFile,intText);
+writecell(intText,intFile);
 
 timeText = [{'Time','Triggered cells (%)'};num2cell(timeX),num2cell(timeY)];
 timeFile = [resultsDir,filesep,'Triggering.xlsx'];
-createSpreadsheet(excel,timeFile,timeText,0);
+writecell(timeText,timeFile);
 
 lagText = [{'Time','Triggered cells (%)'};num2cell(lagX),num2cell(lagY)];
 lagFile = [resultsDir,filesep,'Triggering_wrt_landing.xlsx'];
-createSpreadsheet(excel,lagFile,lagText,0);
+writecell(lagText,lagFile);
     
 landingText = [{'Time','Attached cells (%)'};num2cell(landingX),num2cell(landingY)];
 landingFile = [resultsDir,filesep,'Landing.xlsx'];
-createSpreadsheet(excel,landingFile,landingText,0);
+writecell(landingText,landingFile);
 
 cellDiamStr = ['Cell diameter (',getUnit('um'),')'];
 pixelSizeStr = ['Pixel size (',getUnit('um'),')'];
@@ -436,7 +434,7 @@ infoText = [{cellDiamStr,pixelSizeStr,'Interval (s)','Min track length (s)','Int
     'Smoothing (SDs)',maxSpeedStr,minGradStr,'Min spike height','Min spike duration (s)',...
     'Min height for "coming in hot"','Early cells included'};infoValues];
 infoFile = [resultsDir,filesep,'Info.xlsx'];
-createSpreadsheet(excel,infoFile,infoText);
+writecell(infoText,infoFile);
 
 cellId = vertcat(cellId{:});
 spikesFields = fieldnames(Spikes);
@@ -446,15 +444,15 @@ for iField = 1:size(spikesFields,1)
     Spikes.(fieldName) = round(Spikes.(fieldName),3,'significant');
 end
 spikesValues = cell2mat(struct2cell(Spikes)');
-spikesMean = round(nanmean(spikesValues,1),3,'significant');
-spikesSd = round(nanstd(spikesValues,0,1),3,'significant');
+spikesMean = round(mean(spikesValues,1,'omitnan'),3,'significant');
+spikesSd = round(std(spikesValues,0,1,'omitnan'),3,'significant');
 if ~isempty(spikesValues)
     spikesHeadings = {'Cell','Spike','Time wrt start of track (s)','Time wrt landing (s)','Spike height',...
         'Spike duration (s)','Integrated intensity'};
     spikesText = [spikesHeadings;num2cell(cellId),num2cell(spikesValues);{'Mean'},num2cell(spikesMean);{'SD'},...
         num2cell(spikesSd)];
     spikesFile = [resultsDir,filesep,'Spikes.xlsx'];
-    createSpreadsheet(excel,spikesFile,spikesText,2);
+    writecell(spikesText,spikesFile);
 end
 
 distStr = ['Distance travelled (',getUnit('um'),')'];
@@ -465,8 +463,8 @@ for iField = 1:size(resultsFields,1)
     Results.(fieldName) = round(Results.(fieldName),3,'significant');
 end
 resultsValues = cell2mat(struct2cell(Results)');
-resultsMean = round(nanmean(resultsValues,1),3,'significant');
-resultsSd = round(nanstd(resultsValues,0,1),3,'significant');
+resultsMean = round(mean(resultsValues,1,'omitnan'),3,'significant');
+resultsSd = round(std(resultsValues,0,1,'omitnan'),3,'significant');
 resultsHeadings = {'Cell','Track length (s)','Final X position','Final Y position','Attachment',...
     'Time of landing (s)',distStr,speedStr,'Calcium release','Came in hot','No of spikes',...
     'Time of first spike wrt start of track (s)','Time of first spike wrt landing (s)','Max spike height',...
@@ -474,9 +472,6 @@ resultsHeadings = {'Cell','Track length (s)','Final X position','Final Y positio
 resultsText = [resultsHeadings;num2cell(cellNos),num2cell(resultsValues);{'Mean'},num2cell(resultsMean);{'SD'},...
     num2cell(resultsSd)];
 resultsFile = [resultsDir,filesep,'Results.xlsx'];
-createSpreadsheet(excel,resultsFile,resultsText,2);
-
-excel.Quit;
-excel.delete;
+writecell(resultsText,resultsFile);
 
 toc;
